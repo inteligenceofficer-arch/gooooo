@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b6e99">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TOEIC">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>TOEIC 실전 연습</title>
+<style>html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap">
+<style>
+/* Layout: sticky control bar over a single column of question sets; passages in a serif "exam paper" block, options as full-width rows. */
+:root{
+  --bg:#f1f4f8; --surface:#ffffff; --ink:#14213d; --muted:#5b6b82; --line:#d6dde8;
+  --accent:#0b6e99; --accent-ink:#ffffff; --accent-soft:#e0f0f8;
+  --ok:#1a7f4b; --ok-soft:#e1f3e9; --bad:#b42318; --bad-soft:#fbe7e4;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;
+  --font-doc:"Source Serif 4",Georgia,"Noto Serif KR",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1520; --surface:#162131; --ink:#e6ecf4; --muted:#93a3b9; --line:#2a384c;
+  --accent:#5cb8e6; --accent-ink:#06202e; --accent-soft:#17324a;
+  --ok:#4cc38a; --ok-soft:#14352a; --bad:#ff8a7a; --bad-soft:#3d1f1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1520; --surface:#162131; --ink:#e6ecf4; --muted:#93a3b9; --line:#2a384c;
+  --accent:#5cb8e6; --accent-ink:#06202e; --accent-soft:#17324a;
+  --ok:#4cc38a; --ok-soft:#14352a; --bad:#ff8a7a; --bad-soft:#3d1f1b; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--font-ui);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto}
+
+header{padding-top:20px}
+h1{font-size:1.5rem;line-height:1.2;margin:0;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.9rem}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 0 10px;margin-top:12px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.tab{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;font-size:.88rem;white-space:nowrap}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:10px;font-size:.88rem}
+.stat{font-variant-numeric:tabular-nums;color:var(--muted)}
+.stat b{color:var(--ink);font-weight:600}
+.grow{flex:1 1 auto}
+.chk{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 12px;font-size:.85rem}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px}
+.panel h2{font-size:1rem;margin:0 0 10px}
+.scorerow{display:grid;grid-template-columns:5.5rem 1fr 4.5rem;gap:10px;align-items:center;padding:4px 0;font-size:.9rem}
+.meter{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ok)}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+
+.set{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-top:16px;overflow:hidden}
+.set-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--accent-soft)}
+.set-head .lbl{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--accent)}
+.dir{margin:0;padding:10px 16px 0;font-size:.85rem;color:var(--muted)}
+.doc{font-family:var(--font-doc);font-size:1rem;line-height:1.65;margin:12px 16px 0;padding:14px 16px;border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+.doc p{margin:0 0 .7em}.doc p:last-child{margin-bottom:0}
+.doc .meta{font-family:var(--font-ui);font-size:.82rem;color:var(--muted)}
+.doc table{border-collapse:collapse;font-family:var(--font-ui);font-size:.88rem;margin:.4em 0;min-width:100%}
+.doc th,.doc td{border:1px solid var(--line);padding:4px 10px;text-align:left}
+.doc .blank{font-family:var(--font-ui);font-weight:600;color:var(--accent)}
+.audio{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 16px 0}
+.script{margin:10px 16px 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--accent-soft);font-family:var(--font-doc);font-size:.95rem}
+.script p{margin:0 0 .3em}
+.q{padding:14px 16px 16px;border-top:1px solid var(--line);margin-top:14px}
+.set > .q:first-of-type{margin-top:0}
+.qt{display:flex;gap:10px;margin:0 0 10px;font-weight:500}
+.qn{flex:0 0 auto;min-width:2.2rem;color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+.opts{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.opt{width:100%;display:flex;gap:10px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 12px;min-width:0}
+.opt:hover:not([disabled]){border-color:var(--accent)}
+.opt .k{flex:0 0 auto;font-weight:600;color:var(--muted)}
+.opt .t{min-width:0;overflow-wrap:anywhere}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.ok{border-color:var(--ok);background:var(--ok-soft)}
+.opt.bad{border-color:var(--bad);background:var(--bad-soft)}
+.opt[disabled]{cursor:default}
+.exp{margin-top:10px;font-size:.9rem;padding:8px 12px;border-radius:6px;background:var(--bg);border:1px dashed var(--line)}
+.exp b.ok{color:var(--ok)} .exp b.bad{color:var(--bad)}
+.empty{padding:32px 0;text-align:center;color:var(--muted)}
+footer{margin-top:28px;color:var(--muted);font-size:.8rem}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>TOEIC 실전 연습</h1>
+    <p class="sub">Part 2–7 · 48문항 · 실제 시험 형식을 따라 새로 만든 연습 문제입니다 (공식 기출 아님)</p>
+  </header>
+
+  <div class="bar">
+    <div class="tabs" id="tabs" role="group" aria-label="파트 선택"></div>
+    <div class="row">
+      <span class="stat" id="stat"></span>
+      <span class="grow"></span>
+      <label class="chk"><input type="checkbox" id="instant"> 풀자마자 정답 확인</label>
+      <label class="chk"><input type="checkbox" id="wrongOnly"> 오답/미응답만</label>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="submit">채점하기</button>
+      <button class="btn" id="summary">결과 요약</button>
+      <button class="btn" id="reset">초기화</button>
+    </div>
+  </div>
+
+  <div id="summaryPanel" class="panel" hidden></div>
+  <main id="list"></main>
+
+  <footer>
+    답안과 진행 상황은 이 기기의 브라우저에 저장됩니다. Listening 음성은 기기에 내장된 영어 음성(TTS)으로 재생됩니다.
+  </footer>
+</div>
+
+<script>
+/* ================= DATA (문제를 추가·수정하려면 이 블록만 고치면 됩니다) ================= */
+const DATA_VERSION = '1.0';
+const L = 'ABCD';
+const p5 = (n,q,o,a,e) => ({part:5,label:'Part 5 · Incomplete Sentences',dir:'빈칸에 들어갈 가장 적절한 단어 또는 구를 고르세요.',qs:[{n,q,o,a,e}]});
+
+const SETS = [
+  /* ---------- Part 2 ---------- */
+  ...[
+    [1,'When is the budget meeting?',['In the conference room.','At two o\'clock.','Yes, I\'ll bring it.'],1,'When 의문문 → 시각으로 답한 (B). (A)는 Where, (C)는 Yes/No 응답이라 부적절.'],
+    [2,'Who\'s organizing the company picnic?',['Next Saturday.','The picnic tables are new.','Ms. Alvarez, I think.'],2,'Who 의문문 → 사람 이름으로 답한 (C). (B)는 picnic 반복 함정.'],
+    [3,'Why was the shipment delayed?',['Because of the snowstorm.','About 20 boxes.','To the Chicago office.'],0,'Why 의문문 → 이유(Because of ...)를 말한 (A).'],
+    [4,'Would you like to review the contract now or after lunch?',['The legal department.','After lunch is better for me.','Yes, it was delicious.'],1,'선택의문문 → 둘 중 하나를 고른 (B). (C)는 lunch 연상 함정.'],
+    [5,'How do I reserve a meeting room?',['You can use the online calendar.','Around ten people.','It\'s very spacious.'],0,'How 방법 질문 → 방법을 알려주는 (A).'],
+    [6,'Haven\'t you submitted the timesheet yet?',['A new time zone.','Not yet, I\'ll do it this afternoon.','The sheets are in the cabinet.'],1,'부정의문문 → "Not yet"으로 답한 (B). (A)는 유사 발음(time) 함정.'],
+    [7,'Where should I put these brochures?',['By the front desk, please.','Last Thursday.','I prefer the blue one.'],0,'Where 의문문 → 장소로 답한 (A).'],
+    [8,'The printer is out of paper again, isn\'t it?',['Yes, I\'ll refill it.','A color copy.','On the second floor.'],0,'부가의문문 → 동의 후 조치를 말한 (A).']
+  ].map(([n,q,o,a,e]) => ({
+    part:2,label:'Part 2 · Question-Response',
+    dir:'재생 버튼을 눌러 질문과 보기 A–C를 듣고, 가장 적절한 응답을 고르세요.',
+    audio:[['W',q],['M','A. '+o[0]],['M','B. '+o[1]],['M','C. '+o[2]]],
+    qs:[{n,q:'Mark your answer.',o,a,e}]
+  })),
+
+  /* ---------- Part 3 ---------- */
+  {part:3,label:'Part 3 · Conversations · Questions 9–11',dir:'대화를 듣고 질문에 답하세요.',
+   audio:[
+    ['W','Hi, Tom. Did you see the e-mail about the office move?'],
+    ['M','Yes. We\'re relocating to the Dunmore Building on August 1. I\'m a little worried about the commute, though.'],
+    ['W','There\'s a shuttle bus from the central station. It runs every 15 minutes.'],
+    ['M','That\'s good news. Do you know when we need to pack?'],
+    ['W','Facilities will drop off boxes next Monday, and everything should be labeled by July 28.']],
+   qs:[
+    {n:9,q:'What are the speakers discussing?',o:['A new hire','An office relocation','A software upgrade','A client visit'],a:1,e:'사무실 이전(office move / relocating)이 대화 주제.'},
+    {n:10,q:'What does the woman say about the shuttle bus?',o:['It is available only in the morning.','It leaves from the central station every 15 minutes.','It requires a special pass.','It is free for visitors.'],a:1,e:'"a shuttle bus from the central station. It runs every 15 minutes."'},
+    {n:11,q:'What must employees do by July 28?',o:['Label their packed boxes','Submit a parking request','Attend a training session','Return their access cards'],a:0,e:'"everything should be labeled by July 28."'}]},
+
+  /* ---------- Part 4 ---------- */
+  {part:4,label:'Part 4 · Talks · Questions 12–14',dir:'담화를 듣고 질문에 답하세요.',
+   audio:[['W','Attention, shoppers. Thank you for visiting Marlow Department Store. Our annual summer sale begins tomorrow at 9 A.M. All outdoor furniture will be 30 percent off, and customers who spend over $100 will receive a free tote bag. Please note that the store will close at 6 P.M. this evening to prepare. Rewards members may shop one hour early, beginning at 8 A.M., with their membership card.']],
+   qs:[
+    {n:12,q:'Where is the announcement being made?',o:['At a hotel','At a department store','At an airport','At a community center'],a:1,e:'Marlow Department Store라는 언급으로 장소 파악.'},
+    {n:13,q:'What will customers who spend over $100 receive?',o:['A discount coupon','A free beverage','A tote bag','A gift card'],a:2,e:'"a free tote bag."'},
+    {n:14,q:'What are rewards members allowed to do?',o:['Shop before the store opens to the public','Return items without a receipt','Park for free','Order products online'],a:0,e:'"may shop one hour early" = 개점 전 쇼핑.'}]},
+
+  /* ---------- Part 5 ---------- */
+  p5(15,'All employees must submit their expense reports ------- the end of the month.',['by','until','during','since'],0,'마감 시점(~까지)을 나타내는 by. until은 계속되는 동작에 쓴다.'),
+  p5(16,'The new software has ------- improved the efficiency of our payroll department.',['significant','significantly','significance','signify'],1,'has와 p.p.(improved) 사이에는 부사.'),
+  p5(17,'Ms. Park was promoted ------- she exceeded her sales targets for three consecutive quarters.',['because','despite','so that','in addition to'],0,'뒤에 절이 있으므로 접속사. 이유를 나타내는 because. despite는 전치사.'),
+  p5(18,'Please contact ------- in the human resources department if you have questions about benefits.',['any','anyone','whoever','each other'],1,'전치사 contact의 목적어 자리, 뒤의 in HR의 수식을 받는 대명사 anyone.'),
+  p5(19,'The conference room is reserved for ------- use by the marketing team this week.',['exclude','exclusive','exclusively','exclusion'],1,'명사 use 앞 형용사 exclusive(독점적인).'),
+  p5(20,'Mr. Tanaka will be ------- to the staff as the new branch manager at tomorrow\'s meeting.',['introduce','introducing','introduced','introduction'],2,'be introduced to ~ (수동태).'),
+  p5(21,'------- the heavy rain, the outdoor concert went ahead as scheduled.',['Although','Despite','However','Whereas'],1,'뒤에 명사구(the heavy rain)이므로 전치사 Despite.'),
+  p5(22,'Our supplier offers a wide ------- of office furniture at competitive prices.',['vary','variety','various','variously'],1,'a wide variety of ~ (다양한).'),
+  p5(23,'The report must be reviewed by a supervisor ------- it is sent to the client.',['before','between','beside','so'],0,'뒤에 절이 있고 문맥상 "보내기 전에" → 접속사 before.'),
+  p5(24,'Hotel guests are ------- to check out by 11:00 A.M.',['request','requesting','requested','requests'],2,'be requested to ~ (요청받다, 수동태).'),
+  p5(25,'The marketing director was ------- about the results of the customer survey.',['please','pleased','pleasing','pleasure'],1,'사람 주어의 감정 표현은 p.p.형 pleased (about ~에 기뻐하는).'),
+  p5(26,'------- of the two candidates has the required certification.',['Both','Neither','All','Several'],1,'of the two + 단수동사 has → Neither. Both는 복수동사가 필요.'),
+  p5(27,'Revenue grew ------- than analysts had predicted.',['rapid','more rapidly','most rapidly','rapidity'],1,'than이 있으므로 비교급. 동사 grew를 수식하는 부사 비교급.'),
+  p5(28,'The factory will remain closed ------- the renovation is complete.',['until','during','unless','besides'],0,'"개조가 끝날 때까지" 계속 상태이므로 접속사 until. during은 전치사.'),
+  p5(29,'Customers who purchase a laptop are ------- for a free carrying case.',['eligible','eligibly','eligibility','elect'],0,'be eligible for ~ (~할 자격이 있는).'),
+  p5(30,'Mr. Silva has worked as an accountant ------- more than ten years.',['since','for','during','at'],1,'기간(more than ten years) 앞에는 for. since는 시점 앞.'),
+  p5(31,'The company\'s profits are expected to ------- next year.',['rise','raise','rises','rising'],0,'be expected to + 동사원형. raise는 목적어가 필요한 타동사.'),
+  p5(32,'We would like to thank all volunteers ------- helped organize the charity event.',['who','whom','which','whose'],0,'선행사가 사람이고 뒤에 동사가 바로 오므로 주격 관계대명사 who.'),
+  p5(33,'The ------- of the new policy will be announced on Friday.',['implement','implemented','implementation','implementing'],2,'관사 The 뒤, 전치사 of 앞 → 명사 implementation.'),
+  p5(34,'Ms. Chen asked that the contract ------- revised before she signs it.',['is','be','being','was'],1,'요구·제안 동사(ask) 뒤 that절은 (should) + 동사원형 → be revised.'),
+
+  /* ---------- Part 6 ---------- */
+  {part:6,label:'Part 6 · Text Completion · Questions 35–38',dir:'글을 읽고 빈칸에 들어갈 가장 적절한 답을 고르세요.',
+   doc:`<p class="meta"><b>To:</b> All Staff<br><b>From:</b> Facilities Department<br><b>Subject:</b> East Parking Lot Closure</p>
+<p>Please be advised that the east parking lot will be closed from March 3 to March 7 for resurfacing. <span class="blank">(35)</span> ------- the work is under way, employees are asked to park in the south lot. Spaces there are limited, so we <span class="blank">(36)</span> ------- that employees share rides whenever possible. <span class="blank">(37)</span> -------. Thank you for your <span class="blank">(38)</span> ------- and cooperation.</p>`,
+   qs:[
+    {n:35,q:'Blank (35)',o:['While','During','Despite','Because of'],a:0,e:'뒤에 절(the work is under way)이 있으므로 접속사 While.'},
+    {n:36,q:'Blank (36)',o:['suggest','suggests','suggested','suggesting'],a:0,e:'주어 we, 현재 시제 → suggest.'},
+    {n:37,q:'Blank (37)',o:['The lot will reopen on Monday, March 10.','Several employees have asked about the new cafeteria menu.','Parking permits can be renewed online.','The south lot was built five years ago.'],a:0,e:'주차장 폐쇄 안내 흐름에 맞게 재개장일을 알리는 문장. 나머지는 주제 이탈.'},
+    {n:38,q:'Blank (38)',o:['patient','patience','patiently','patients'],a:1,e:'your 뒤 명사, cooperation과 병렬되는 명사 patience.'}]},
+  {part:6,label:'Part 6 · Text Completion · Questions 39–42',dir:'글을 읽고 빈칸에 들어갈 가장 적절한 답을 고르세요.',
+   doc:`<p><b>Greenfield Library to Extend Weekend Hours</b></p>
+<p>Beginning June 1, Greenfield Library will open at 8:00 A.M. on Saturdays, one hour <span class="blank">(39)</span> ------- than before. The change is a response to <span class="blank">(40)</span> ------- from many local residents. Visitors will also be able to use the study rooms throughout the day. <span class="blank">(41)</span> -------. For more information, please <span class="blank">(42)</span> ------- the library's Web site.</p>`,
+   qs:[
+    {n:39,q:'Blank (39)',o:['early','earlier','earliest','earlier than'],a:1,e:'"one hour earlier than before"의 비교급. than이 이미 뒤에 있으므로 earlier.'},
+    {n:40,q:'Blank (40)',o:['request','requests','requesting','requested'],a:1,e:'불특정 다수의 요청(from many residents) → 복수명사 requests.'},
+    {n:41,q:'Blank (41)',o:['The library was founded in 1952.','Reservations are recommended for the group study rooms.','Many books were donated last year.','The parking lot is located behind the building.'],a:1,e:'직전 문장이 study rooms 이용에 관한 내용이므로 예약 권장 안내가 자연스럽다.'},
+    {n:42,q:'Blank (42)',o:['visit','visiting','visited','visits'],a:0,e:'please + 동사원형.'}]},
+
+  /* ---------- Part 7 ---------- */
+  {part:7,label:'Part 7 · Reading Comprehension · Questions 43–44',dir:'다음 이메일을 읽고 질문에 답하세요.',
+   doc:`<p class="meta"><b>From:</b> Daniel Reyes<br><b>To:</b> Olivia Grant<br><b>Date:</b> May 12<br><b>Subject:</b> Delivery update for Order #4821</p>
+<p>Dear Ms. Grant,</p>
+<p>Thank you for your order of 40 ergonomic chairs. Unfortunately, a shipping delay at our warehouse means your chairs will arrive on May 22 rather than May 18. To apologize for the inconvenience, we have applied a 10 percent discount to your invoice.</p>
+<p>If the new date is a problem, please call me at 555-0142 before May 15, and I can arrange a partial shipment of 20 chairs by May 18.</p>
+<p>Sincerely,<br>Daniel Reyes<br>Customer Service, Harlow Office Supply</p>`,
+   qs:[
+    {n:43,q:'Why did Mr. Reyes write the e-mail?',o:['To confirm an order','To announce a delay','To request a payment','To advertise a discount'],a:1,e:'첫 단락에서 배송 지연(a shipping delay)을 알린다.'},
+    {n:44,q:'What does Mr. Reyes offer to do if Ms. Grant calls before May 15?',o:['Cancel the order','Send some of the chairs earlier','Increase the discount','Change the chair model'],a:1,e:'a partial shipment of 20 chairs by May 18 = 의자 일부를 더 일찍 발송.'}]},
+  {part:7,label:'Part 7 · Reading Comprehension · Questions 45–46',dir:'다음 기사를 읽고 질문에 답하세요.',
+   doc:`<p><b>Brightway Cafe Opens Second Location</b></p>
+<p>RIVERTON (June 3) — Brightway Cafe, a popular coffee shop on Elm Street, opened a second location in Harbor Mall on Monday. Owner Nina Patel said the expansion was prompted by growing demand for the cafe's baked goods, which are made each morning in the Elm Street kitchen and delivered to the new shop. "We couldn't keep up with orders," Ms. Patel said.</p>
+<p>The Harbor Mall location has seating for 40 and will be open from 7 A.M. to 9 P.M. daily, two hours later than the Elm Street shop closes. To celebrate, customers who show a copy of this article will receive a free pastry with any beverage purchase through June 15. Ms. Patel plans to hire six more employees by the end of the month.</p>`,
+   qs:[
+    {n:45,q:'According to the article, why did Ms. Patel open a new location?',o:['The rent was lower.','Demand for baked goods increased.','The Elm Street shop is closing.','She received an award.'],a:1,e:'"growing demand for the cafe\'s baked goods"'},
+    {n:46,q:'What is indicated about the Harbor Mall location?',o:['It has its own kitchen.','It closes later than the Elm Street shop.','It is open only on weekdays.','It has been open for two years.'],a:1,e:'Harbor Mall은 9 P.M.에 닫고 Elm Street는 두 시간 이른 7 P.M.에 닫는다. 빵은 Elm Street 주방에서 만들어지므로 (A)는 오답.'}]},
+  {part:7,label:'Part 7 · Reading Comprehension · Questions 47–48',dir:'다음 안내문과 이메일을 읽고 질문에 답하세요.',
+   doc:`<p><b>Lakeside Conference Center — Room Rates</b></p>
+<table><tr><th>Room</th><th>Capacity</th><th>Half-day rate</th></tr>
+<tr><td>Aspen Room</td><td>up to 20</td><td>$150</td></tr>
+<tr><td>Birch Hall</td><td>up to 60</td><td>$320</td></tr>
+<tr><td>Cedar Auditorium</td><td>up to 150</td><td>$700</td></tr></table>
+<p>• A full-day rental costs 1.8 times the half-day rate.<br>• Catering is available at $18 per person.<br>• Reservations must be made at least 14 days in advance.</p>
+<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+<p class="meta"><b>To:</b> reservations@lakeside.example<br><b>From:</b> Hana Kwon<br><b>Date:</b> June 10<br><b>Subject:</b> Room request</p>
+<p>I would like to reserve a room for a staff training session on June 20. It will last all day, and 45 people will attend. We would also like lunch for all attendees. Please confirm availability.</p>`,
+   qs:[
+    {n:47,q:'What is suggested about Ms. Kwon\'s request?',o:['It exceeds the capacity of the largest room.','It was submitted too late.','It includes a service that is not offered.','It is for a half day only.'],a:1,e:'6월 10일에 요청, 행사는 6월 20일 → 10일 전. 최소 14일 전 예약 규정에 어긋난다.'},
+    {n:48,q:'How much would Ms. Kwon pay for the most suitable room and lunch, if her request were accepted?',o:['$576','$810','$1,386','$1,520'],a:2,e:'45명 → Birch Hall(60명까지). $320 × 1.8 = $576, 케이터링 $18 × 45 = $810. 합계 $1,386.'}]}
+];
+/* ================= END DATA ================= */
+
+const PARTS = [['all','전체'],[2,'Part 2'],[3,'Part 3'],[4,'Part 4'],[5,'Part 5'],[6,'Part 6'],[7,'Part 7']];
+const ALLQ = SETS.flatMap(s => s.qs.map(q => ({...q, part:s.part})));
+const KEY = 'toeic-practice-v1';
+let st = {ans:{}, sub:false, instant:true, part:'all', wrongOnly:false};
+const openScript = new Set();
+
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.ver === DATA_VERSION.split('.')[0]) st = {...st, ...r.st}; } catch (e) {}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify({ver:DATA_VERSION.split('.')[0], st})); } catch (e) {} }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const revealed = n => st.sub || (st.instant && n in st.ans);
+const isOk = q => st.ans[q.n] === q.a;
+
+/* ---- audio (browser TTS) ---- */
+const canSpeak = 'speechSynthesis' in window;
+function play(i){
+  if (!canSpeak) return;
+  const s = SETS[i], voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  speechSynthesis.cancel();
+  s.audio.forEach(([sp,t]) => {
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'en-US'; u.rate = .92;
+    u.pitch = sp === 'W' ? 1.25 : .8;
+    if (voices.length) u.voice = voices[(sp === 'W' ? 0 : 1) % voices.length];
+    speechSynthesis.speak(u);
+  });
+}
+function stop(){ if (canSpeak) speechSynthesis.cancel(); }
+
+/* ---- render ---- */
+function setWrong(s){ return s.qs.some(q => !(q.n in st.ans) || (revealed(q.n) && !isOk(q))); }
+
+function render(){
+  $('instant').checked = st.instant;
+  $('wrongOnly').checked = st.wrongOnly;
+  $('submit').hidden = st.instant && !st.sub ? false : false;
+  $('submit').textContent = st.sub ? '채점 해제' : '채점하기';
+  $('tabs').innerHTML = PARTS.map(([k,l]) => `<button class="tab" data-part="${k}" aria-pressed="${String(st.part) === String(k)}">${l}</button>`).join('');
+
+  const done = ALLQ.filter(q => q.n in st.ans).length;
+  const shown = ALLQ.filter(q => q.n in st.ans && revealed(q.n));
+  const correct = shown.filter(isOk).length;
+  $('stat').innerHTML = `푼 문제 <b>${done}</b>/${ALLQ.length} · 정답 <b>${correct}</b>${shown.length ? ` (${Math.round(correct/shown.length*100)}%)` : ''}`;
+
+  let list = SETS.map((s,i) => [s,i]).filter(([s]) => st.part === 'all' || s.part === Number(st.part));
+  if (st.wrongOnly) list = list.filter(([s]) => setWrong(s));
+  $('list').innerHTML = list.length ? list.map(([s,i]) => renderSet(s,i)).join('') : '<p class="empty">표시할 문제가 없습니다.</p>';
+  if (!$('summaryPanel').hidden) renderSummary();
+}
+
+function renderSet(s,i){
+  const allDone = s.qs.every(q => revealed(q.n) && q.n in st.ans);
+  const showScript = s.audio && (allDone || openScript.has(i));
+  const audioBar = s.audio ? `<div class="audio">
+      <button class="btn primary" data-play="${i}" ${canSpeak ? '' : 'disabled'}>▶ 재생</button>
+      <button class="btn" data-stop="1" ${canSpeak ? '' : 'disabled'}>■ 정지</button>
+      <button class="btn" data-script="${i}">${showScript ? '스크립트 숨기기' : '스크립트 보기'}</button>
+      ${canSpeak ? '' : '<span class="stat">이 기기는 음성 재생을 지원하지 않습니다. 스크립트를 읽어 보세요.</span>'}
+    </div>${showScript ? `<div class="script">${s.audio.map(([sp,t]) => `<p>${s.part === 4 ? '' : `<b>${sp}:</b> `}${esc(t)}</p>`).join('')}</div>` : ''}` : '';
+  return `<section class="set">
+    <div class="set-head"><span class="lbl">${esc(s.label)}</span></div>
+    <p class="dir">${esc(s.dir)}</p>
+    ${s.doc ? `<div class="doc">${s.doc}</div>` : ''}
+    ${audioBar}
+    ${s.qs.map(q => renderQ(q)).join('')}
+  </section>`;
+}
+
+function renderQ(q){
+  const a = st.ans[q.n], show = revealed(q.n) && a !== undefined;
+  const opts = q.o.map((t,k) => {
+    let c = 'opt';
+    if (show) { if (k === q.a) c += ' ok'; else if (k === a) c += ' bad'; }
+    else if (k === a) c += ' sel';
+    return `<li><button class="${c}" data-q="${q.n}" data-k="${k}" ${show ? 'disabled' : ''}><span class="k">${L[k]}</span><span class="t">${esc(t)}</span></button></li>`;
+  }).join('');
+  const exp = show ? `<div class="exp"><b class="${a === q.a ? 'ok' : 'bad'}">${a === q.a ? '정답' : '오답'}</b> · 정답 ${L[q.a]}<br>${esc(q.e)}</div>`
+    : (st.sub && a === undefined ? `<div class="exp"><b class="bad">미응답</b> · 정답 ${L[q.a]}<br>${esc(q.e)}</div>` : '');
+  return `<div class="q"><p class="qt"><span class="qn">${q.n}.</span><span>${esc(q.q)}</span></p><ul class="opts">${opts}</ul>${exp}</div>`;
+}
+
+function renderSummary(){
+  const rows = [2,3,4,5,6,7].map(p => {
+    const qs = ALLQ.filter(q => q.part === p), c = qs.filter(q => revealed(q.n) && isOk(q)).length;
+    return `<div class="scorerow"><span>Part ${p}</span><span class="meter"><i style="width:${c/qs.length*100}%"></i></span><span class="num">${c} / ${qs.length}</span></div>`;
+  }).join('');
+  const lis = ALLQ.filter(q => revealed(q.n) && isOk(q)).length;
+  $('summaryPanel').innerHTML = `<h2>파트별 결과</h2>${rows}<div class="scorerow"><b>합계</b><span class="meter"><i style="width:${lis/ALLQ.length*100}%"></i></span><span class="num"><b>${lis} / ${ALLQ.length}</b></span></div>`;
+}
+
+/* ---- events ---- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.part !== undefined) { st.part = t.dataset.part; window.scrollTo(0,0); }
+  else if (t.dataset.q) { const n = +t.dataset.q; if (!(revealed(n) && n in st.ans)) st.ans[n] = +t.dataset.k; }
+  else if (t.dataset.play) { play(+t.dataset.play); return; }
+  else if (t.dataset.stop) { stop(); return; }
+  else if (t.dataset.script) { const i = +t.dataset.script; openScript.has(i) ? openScript.delete(i) : openScript.add(i); }
+  else if (t.id === 'submit') { st.sub = !st.sub; if (st.sub) { $('summaryPanel').hidden = false; } }
+  else if (t.id === 'summary') { $('summaryPanel').hidden = !$('summaryPanel').hidden; }
+  else if (t.id === 'reset') {
+    if (t.dataset.arm) { st.ans = {}; st.sub = false; openScript.clear(); delete t.dataset.arm; t.textContent = '초기화'; t.classList.remove('danger'); stop(); }
+    else { t.dataset.arm = 1; t.textContent = '정말 지울까요? 한 번 더'; t.classList.add('danger'); setTimeout(() => { delete t.dataset.arm; t.textContent = '초기화'; t.classList.remove('danger'); }, 3500); return; }
+  } else return;
+  save(); render();
+});
+$('instant').addEventListener('change', e => { st.instant = e.target.checked; save(); render(); });
+$('wrongOnly').addEventListener('change', e => { st.wrongOnly = e.target.checked; save(); render(); });
+if (canSpeak) speechSynthesis.getVoices();
+render();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
