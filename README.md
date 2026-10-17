@@ -6,3 +6,6 @@
 
 고정 주소: https://inteligenceofficer-arch.github.io/gooooo/
 (Settings → Pages → Deploy from a branch → 브랜치 선택, 폴더 `/docs`)
+
+## 스탬프캠 (날짜·장소 워터마크 카메라)
+- 소스: `docs/camera/` (단일 `index.html` PWA) → https://inteligenceofficer-arch.github.io/gooooo/camera/

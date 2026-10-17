@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="스탬프캠">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>스탬프캠</title>
+<style>
+:root{--bg:#000;--fg:#fff;--dim:rgba(255,255,255,.65);--accent:#ffd60a;--panel:rgba(28,28,30,.92)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+#top{display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;gap:8px}
+.pill{min-width:44px;height:40px;padding:0 12px;border-radius:20px;background:rgba(255,255,255,.14);font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.pill.on{background:var(--accent);color:#000}
+#stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#111}
+video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+video.mirror{transform:scaleX(-1)}
+#grid{position:absolute;inset:0;pointer-events:none;background:
+ linear-gradient(#fff6,#fff6) 33.33% 0/1px 100% no-repeat,linear-gradient(#fff6,#fff6) 66.66% 0/1px 100% no-repeat,
+ linear-gradient(#fff6,#fff6) 0 33.33%/100% 1px no-repeat,linear-gradient(#fff6,#fff6) 0 66.66%/100% 1px no-repeat}
+#wm{position:absolute;left:10px;right:10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.38);pointer-events:none;text-shadow:0 1px 3px #000;line-height:1.35}
+#wm.bottom{bottom:10px}#wm.top{top:10px}
+#wm .t{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+#wm .p{font-size:13px;opacity:.95;word-break:keep-all}
+#focus{position:absolute;width:70px;height:70px;border:2px solid var(--accent);border-radius:50%;pointer-events:none;opacity:0;transform:scale(1.3);transition:.25s}
+#focus.show{opacity:1;transform:scale(1)}
+#count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:700;text-shadow:0 2px 12px #000;pointer-events:none}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#zoomBar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--wmh,90px) + 24px);display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.4);padding:4px 10px;border-radius:20px}
+#zoomBar input{width:150px;accent-color:var(--accent)}
+#zoomBar span{font-size:13px;min-width:34px;text-align:center}
+#bar{display:flex;align-items:center;justify-content:space-around;padding:14px 12px calc(env(safe-area-inset-bottom) + 18px);background:#000}
+#shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #000;transition:transform .08s}
+#shutter:active{transform:scale(.92)}
+#thumb{width:52px;height:52px;border-radius:10px;border:2px solid #555;background:#222 center/cover;overflow:hidden}
+#flip{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.14);font-size:24px}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%);background:var(--panel);padding:8px 14px;border-radius:18px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center;z-index:30}
+#toast.show{opacity:1}
+.sheet{position:fixed;inset:0;background:var(--panel);z-index:20;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.sheet header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:18px;font-weight:600}
+.sheet .body{flex:1;overflow:auto;padding:0 16px calc(env(safe-area-inset-bottom) + 16px)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #fff2;font-size:16px}
+.row small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
+.row input[type=checkbox]{width:44px;height:26px;accent-color:var(--accent)}
+.row select{font-size:15px;background:#333;color:#fff;border:0;border-radius:8px;padding:6px}
+#gal{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+#gal div{aspect-ratio:1;background:#222 center/cover;cursor:pointer}
+#viewer{background:#000;z-index:25;align-items:center;justify-content:center}
+#viewer img{max-width:100%;max-height:calc(100% - 130px);object-fit:contain}
+#viewer .acts{display:flex;gap:10px;padding:16px;flex-wrap:wrap;justify-content:center}
+#perm{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;background:#111}
+#perm button{background:var(--accent);color:#000;padding:12px 24px;border-radius:24px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <button class="pill" id="bTorch" hidden>🔦</button>
+    <button class="pill" id="bTimer">⏱ 끔</button>
+    <button class="pill" id="bGrid">▦</button>
+    <button class="pill" id="bSet">⚙ 설정</button>
+  </div>
+  <div id="stage">
+    <video id="v" playsinline muted autoplay></video>
+    <div id="grid" hidden></div>
+    <div id="wm" class="bottom"><div class="t" id="wmT"></div><div class="p" id="wmP"></div></div>
+    <div id="zoomBar" hidden><span>1×</span><input type="range" id="zoom"><span id="zv">1×</span></div>
+    <div id="focus"></div>
+    <div id="count" hidden></div>
+    <div id="flash"></div>
+    <div id="perm" hidden>
+      <div style="font-size:48px">📷</div>
+      <div id="permMsg">카메라 권한이 필요합니다</div>
+      <button id="bStart">카메라 시작</button>
+    </div>
+  </div>
+  <div id="bar">
+    <button id="thumb" aria-label="갤러리"></button>
+    <button id="shutter" aria-label="촬영"></button>
+    <button id="flip" aria-label="전환">🔄</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<div class="sheet" id="settings" hidden>
+  <header>설정 <button class="pill" data-close>닫기</button></header>
+  <div class="body">
+    <label class="row"><span>날짜·시각 워터마크</span><input type="checkbox" id="oTime"></label>
+    <label class="row"><span>장소(주소) 워터마크<small>GPS + 주소 변환(OpenStreetMap, 인터넷 필요)</small></span><input type="checkbox" id="oPlace"></label>
+    <label class="row"><span>GPS 좌표 표시</span><input type="checkbox" id="oCoord"></label>
+    <label class="row"><span>워터마크 위치</span><select id="oPos"><option value="bottom">아래</option><option value="top">위</option></select></label>
+    <label class="row"><span>화질</span><select id="oQ"><option value="0.95">최고</option><option value="0.9">높음</option><option value="0.8">보통</option></select></label>
+    <label class="row"><span>촬영 시 진동·소리</span><input type="checkbox" id="oHaptic"></label>
+    <label class="row"><span>촬영 후 바로 공유/저장 창 열기<small>iPhone은 '이미지 저장'으로 사진앱에 저장</small></span><input type="checkbox" id="oShare"></label>
+    <p style="color:var(--dim);font-size:13px;line-height:1.6">홈 화면에 추가하면 앱처럼 전체화면으로 실행됩니다. 사진은 이 앱 갤러리에 보관되며, 공유/저장 버튼으로 휴대폰 사진앱에 내보낼 수 있습니다.</p>
+  </div>
+</div>
+
+<div class="sheet" id="gallery" hidden>
+  <header>갤러리 <button class="pill" data-close>닫기</button></header>
+  <div class="body"><div id="gal"></div><p id="galEmpty" style="color:var(--dim);text-align:center;margin-top:40px">아직 사진이 없습니다</p></div>
+</div>
+
+<div class="sheet" id="viewer" hidden>
+  <img id="vimg" alt="">
+  <div class="acts">
+    <button class="pill" id="vShare">📤 공유/저장</button>
+    <button class="pill" id="vDown">⬇ 다운로드</button>
+    <button class="pill" id="vDel">🗑 삭제</button>
+    <button class="pill" data-close>닫기</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const DAYS=["일","월","화","수","목","금","토"];
+const fmtTime=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} (${DAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+// ---------- settings ----------
+const defaults={time:true,place:true,coord:true,pos:"bottom",q:"0.95",haptic:true,share:false,grid:false,timer:0,facing:"environment"};
+let S=Object.assign({},defaults);
+try{Object.assign(S,JSON.parse(localStorage.getItem("stampcam")||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem("stampcam",JSON.stringify(S))}catch(e){}};
+const bind=(id,key,type)=>{const el=$(id);if(type==="chk"){el.checked=S[key];el.onchange=()=>{S[key]=el.checked;save();renderWM()}}else{el.value=S[key];el.onchange=()=>{S[key]=el.value;save();renderWM()}}};
+bind("oTime","time","chk");bind("oPlace","place","chk");bind("oCoord","coord","chk");bind("oPos","pos");bind("oQ","q");bind("oHaptic","haptic","chk");bind("oShare","share","chk");
+
+function toast(msg,ms=2200){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),ms)}
+
+// ---------- location ----------
+let loc=null;            // {lat,lon,acc,alt}
+let addr="";             // reverse-geocoded address
+let geoState="idle";     // idle | wait | ok | denied
+let lastGeo=null;
+async function reverseGeocode(lat,lon){
+  const key=lat.toFixed(4)+","+lon.toFixed(4);
+  if(lastGeo&&lastGeo.key===key)return;
+  if(lastGeo&&Date.now()-lastGeo.t<8000&&distance(lastGeo,{lat,lon})<30)return;
+  lastGeo={key,t:Date.now(),lat,lon};
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=ko&lat=${lat}&lon=${lon}`);
+    if(!r.ok)throw 0;
+    const j=await r.json();
+    const a=j.address||{};
+    // Korean addresses read big→small; Nominatim lists small→big in display_name, so build from parts
+    const parts=[a.state||a.province,a.city||a.county,a.borough||a.city_district,a.suburb||a.quarter||a.neighbourhood,a.road,a.house_number].filter(Boolean);
+    addr=parts.length>2?parts.join(" "):(j.display_name||"").split(", ").reverse().join(" ");
+    renderWM();
+  }catch(e){/* offline: keep coords only */}
+}
+function distance(a,b){const R=6371000,t=x=>x*Math.PI/180,dLa=t(b.lat-a.lat),dLo=t(b.lon-a.lon);const h=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function startGeo(){
+  if(!navigator.geolocation){geoState="denied";return}
+  geoState="wait";
+  navigator.geolocation.watchPosition(p=>{
+    loc={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,alt:p.coords.altitude};
+    geoState="ok";reverseGeocode(loc.lat,loc.lon);renderWM();
+  },e=>{if(e.code===1){geoState="denied";toast("위치 권한이 꺼져 있어 장소를 기록할 수 없습니다")}renderWM()},
+  {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+
+// ---------- watermark ----------
+function wmLines(d){
+  const lines=[];
+  if(S.time)lines.push({t:fmtTime(d),big:true});
+  if(S.place){
+    if(addr)lines.push({t:"📍 "+addr});
+    else if(geoState==="wait")lines.push({t:"📍 위치 확인 중…"});
+    else if(geoState==="denied")lines.push({t:"📍 위치 사용 불가"});
+  }
+  if(S.coord&&loc)lines.push({t:`${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}`+(loc.alt!=null?`  ${Math.round(loc.alt)}m`:"")+`  ±${Math.round(loc.acc)}m`});
+  return lines;
+}
+function renderWM(){
+  const lines=wmLines(new Date()),el=$("wm");
+  el.className=S.pos;el.hidden=!lines.length;
+  $("wmT").textContent=S.time?lines[0].t:"";
+  $("wmT").hidden=!S.time;
+  $("wmP").innerHTML="";
+  lines.slice(S.time?1:0).forEach(l=>{const d=document.createElement("div");d.textContent=l.t;$("wmP").appendChild(d)});
+  document.documentElement.style.setProperty("--wmh",el.offsetHeight+"px");
+  $("zoomBar").style.bottom=S.pos==="bottom"?`${el.offsetHeight+24}px`:"14px";
+}
+setInterval(()=>{if(S.time)renderWM()},1000);
+
+function drawWM(ctx,w,h,d){
+  const lines=wmLines(d);if(!lines.length)return;
+  const base=Math.max(w,h)/ (w>h?55:42);           // scales with image size
+  const pad=base*.7,gap=base*.35;
+  const sizes=lines.map(l=>l.big?base*1.35:base);
+  const font=(s,b)=>`${b?"700":"500"} ${s}px -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif`;
+  let maxW=0;lines.forEach((l,i)=>{ctx.font=font(sizes[i],l.big);maxW=Math.max(maxW,ctx.measureText(l.t).width)});
+  const boxW=Math.min(w-pad*2,maxW+pad*2),boxH=sizes.reduce((a,s)=>a+s+gap,0)+pad*2-gap;
+  const x=pad,y=S.pos==="bottom"?h-boxH-pad:pad;
+  ctx.fillStyle="rgba(0,0,0,.4)";
+  ctx.beginPath();(ctx.roundRect||ctx.rect).call(ctx,x,y,boxW,boxH,base*.4);ctx.fill();
+  ctx.fillStyle="#fff";ctx.textBaseline="top";ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=base*.15;
+  let cy=y+pad;
+  lines.forEach((l,i)=>{ctx.font=font(sizes[i],l.big);ctx.fillText(l.t,x+pad,cy,boxW-pad*1.5);cy+=sizes[i]+gap});
+  ctx.shadowBlur=0;
+}
+
+// ---------- camera ----------
+const v=$("v");let stream=null,track=null,torchOn=false;
+async function startCam(){
+  stopCam();
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:S.facing},width:{ideal:4096},height:{ideal:3072}}});
+  }catch(e){
+    $("perm").hidden=false;
+    $("permMsg").textContent=location.protocol==="http:"&&location.hostname!=="localhost"?"카메라는 HTTPS 주소에서만 사용할 수 있습니다":"카메라 권한을 허용해 주세요 (브라우저 설정에서 변경 가능)";
+    return;
+  }
+  $("perm").hidden=true;
+  v.srcObject=stream;v.classList.toggle("mirror",S.facing==="user");
+  track=stream.getVideoTracks()[0];
+  setupCaps();
+  acquireWake();
+}
+function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=track=null;torchOn=false}
+function setupCaps(){
+  const caps=track.getCapabilities?track.getCapabilities():{};
+  const z=$("zoom");
+  if(caps.zoom){$("zoomBar").hidden=false;z.min=caps.zoom.min;z.max=caps.zoom.max;z.step=caps.zoom.step||.1;z.value=track.getSettings().zoom||caps.zoom.min;$("zv").textContent=(+z.value).toFixed(1)+"×"}
+  else $("zoomBar").hidden=true;
+  $("bTorch").hidden=!caps.torch;$("bTorch").classList.remove("on");
+  renderWM();
+}
+$("zoom").oninput=e=>{track.applyConstraints({advanced:[{zoom:+e.target.value}]}).catch(()=>{});$("zv").textContent=(+e.target.value).toFixed(1)+"×"};
+$("bTorch").onclick=async()=>{torchOn=!torchOn;try{await track.applyConstraints({advanced:[{torch:torchOn}]});$("bTorch").classList.toggle("on",torchOn)}catch(e){torchOn=false}};
+$("flip").onclick=()=>{S.facing=S.facing==="user"?"environment":"user";save();startCam()};
+$("bStart").onclick=()=>{startCam();if(geoState==="idle")startGeo()};
+
+// tap to focus (where the device supports it) + pinch zoom
+$("stage").addEventListener("click",async e=>{
+  if(e.target.closest("button,input"))return;
+  const f=$("focus"),r=$("stage").getBoundingClientRect();
+  f.style.left=e.clientX-r.left-35+"px";f.style.top=e.clientY-r.top-35+"px";
+  f.classList.add("show");setTimeout(()=>f.classList.remove("show"),900);
+  try{
+    const caps=track.getCapabilities();
+    const x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    const adv={};
+    if(caps.focusMode&&caps.focusMode.includes("single-shot"))adv.focusMode="single-shot";
+    adv.pointsOfInterest=[{x,y}];
+    await track.applyConstraints({advanced:[adv]});
+  }catch(e){}
+});
+let pd=0,pz=1;
+$("stage").addEventListener("touchstart",e=>{if(e.touches.length===2){pd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pz=+$("zoom").value||1}},{passive:true});
+$("stage").addEventListener("touchmove",e=>{
+  if(e.touches.length!==2||$("zoomBar").hidden)return;
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  const z=$("zoom"),val=Math.min(+z.max,Math.max(+z.min,pz*d/pd));
+  z.value=val;z.oninput({target:z});
+},{passive:true});
+
+// keep screen on
+let wake=null;
+async function acquireWake(){try{wake=await navigator.wakeLock.request("screen")}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(!stream)startCam();else acquireWake()}else{stopCam()}});
+
+// ---------- capture ----------
+let busy=false;
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=1200;g.gain.value=.08;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.06)}catch(e){}}
+async function shoot(){
+  if(busy||!stream)return;busy=true;
+  const secs=S.timer;
+  for(let i=secs;i>0;i--){$("count").hidden=false;$("count").textContent=i;if(S.haptic&&navigator.vibrate)navigator.vibrate(30);await new Promise(r=>setTimeout(r,1000))}
+  $("count").hidden=true;
+  const d=new Date();
+  const w=v.videoWidth,h=v.videoHeight;
+  const c=document.createElement("canvas");c.width=w;c.height=h;
+  const ctx=c.getContext("2d");
+  if(S.facing==="user"){/* saved un-mirrored, like a normal photo */}
+  ctx.drawImage(v,0,0,w,h);
+  drawWM(ctx,w,h,d);
+  $("flash").style.transition="none";$("flash").style.opacity=.85;
+  requestAnimationFrame(()=>{$("flash").style.transition="opacity .3s";$("flash").style.opacity=0});
+  if(S.haptic){if(navigator.vibrate)navigator.vibrate(40);beep()}
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",+S.q));
+  const rec={id:d.getTime(),blob,time:d.getTime(),lat:loc?loc.lat:null,lon:loc?loc.lon:null,addr};
+  await dbPut(rec);setThumb(rec);
+  toast("저장됨 ✓");
+  busy=false;
+  if(S.share)sharePhoto(rec);
+}
+$("shutter").onclick=shoot;
+document.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"||e.key==="AudioVolumeUp"){if(!document.querySelector(".sheet:not([hidden])")){e.preventDefault();shoot()}}});
+
+// ---------- top controls ----------
+const TIMERS=[0,3,10];
+const showTimer=()=>{$("bTimer").textContent="⏱ "+(S.timer?S.timer+"초":"끔");$("bTimer").classList.toggle("on",!!S.timer)};
+$("bTimer").onclick=()=>{S.timer=TIMERS[(TIMERS.indexOf(S.timer)+1)%3];save();showTimer()};
+const showGrid=()=>{$("grid").hidden=!S.grid;$("bGrid").classList.toggle("on",S.grid)};
+$("bGrid").onclick=()=>{S.grid=!S.grid;save();showGrid()};
+$("bSet").onclick=()=>$("settings").hidden=false;
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>{b.closest(".sheet").hidden=true});
+
+// ---------- storage (IndexedDB) ----------
+let dbp;
+const db=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open("stampcam",1);r.onupgradeneeded=()=>r.result.createObjectStore("p",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+const tx=async(mode,fn)=>{const d=await db();return new Promise((res,rej)=>{const t=d.transaction("p",mode),q=fn(t.objectStore("p"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+const dbPut=r=>tx("readwrite",s=>s.put(r));
+const dbAll=()=>tx("readonly",s=>s.getAll());
+const dbDel=id=>tx("readwrite",s=>s.delete(id));
+
+let thumbURL=null;
+function setThumb(rec){if(thumbURL)URL.revokeObjectURL(thumbURL);if(!rec){$("thumb").style.backgroundImage="";return}thumbURL=URL.createObjectURL(rec.blob);$("thumb").style.backgroundImage=`url(${thumbURL})`}
+
+// ---------- gallery / viewer ----------
+let urls=[],cur=null;
+async function openGallery(){
+  urls.forEach(URL.revokeObjectURL);urls=[];
+  const all=(await dbAll()).sort((a,b)=>b.time-a.time);
+  const g=$("gal");g.innerHTML="";$("galEmpty").hidden=!!all.length;
+  all.forEach(rec=>{const u=URL.createObjectURL(rec.blob);urls.push(u);const d=document.createElement("div");d.style.backgroundImage=`url(${u})`;d.onclick=()=>openViewer(rec,u);g.appendChild(d)});
+  $("gallery").hidden=false;
+}
+function openViewer(rec,u){cur=rec;$("vimg").src=u;$("viewer").hidden=false}
+$("thumb").onclick=openGallery;
+const fname=r=>{const d=new Date(r.time);return `stamp_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`};
+async function sharePhoto(rec){
+  const file=new File([rec.blob],fname(rec),{type:"image/jpeg"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return}catch(e){if(e.name==="AbortError")return}}
+  downloadPhoto(rec);
+}
+function downloadPhoto(rec){const a=document.createElement("a");a.href=URL.createObjectURL(rec.blob);a.download=fname(rec);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+$("vShare").onclick=()=>sharePhoto(cur);
+$("vDown").onclick=()=>downloadPhoto(cur);
+$("vDel").onclick=async()=>{if(!confirm("이 사진을 삭제할까요?"))return;await dbDel(cur.id);$("viewer").hidden=true;await openGallery();const all=(await dbAll()).sort((a,b)=>b.time-a.time);setThumb(all[0])};
+
+// ---------- boot ----------
+(async()=>{
+  showTimer();showGrid();renderWM();
+  try{const all=(await dbAll()).sort((a,b)=>b.time-a.time);if(all[0])setThumb(all[0])}catch(e){}
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+  startGeo();
+  startCam();
+})();
+})();
+</script>
+</body>
+</html>
