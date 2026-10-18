@@ -1,0 +1,34 @@
+plugins { id 'com.android.application' }
+
+def vCode = (project.findProperty('versionCode') ?: '1').toInteger()
+
+android {
+    namespace 'com.stampcam.app'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.stampcam.app'
+        minSdk 29
+        targetSdk 34
+        versionCode vCode
+        versionName "1.0.${vCode}"
+    }
+    signingConfigs {
+        // Fixed key so every release can be installed over the previous one (= updates).
+        release {
+            storeFile file('../stampcam.jks')
+            storePassword 'stampcam'
+            keyAlias 'stampcam'
+            keyPassword 'stampcam'
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

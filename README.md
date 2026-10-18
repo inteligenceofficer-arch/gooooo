@@ -9,3 +9,8 @@
 
 ## 스탬프캠 (날짜·장소 워터마크 카메라)
 - 소스: `docs/camera/` (단일 `index.html` PWA) → https://inteligenceofficer-arch.github.io/gooooo/camera/
+
+### Android 앱(APK)
+- `android/` : 웹앱을 감싼 안드로이드 앱 소스. 푸시하면 GitHub Actions(`android.yml`)가 APK를 빌드해 Releases에 올립니다.
+- 다운로드(항상 최신): https://github.com/inteligenceofficer-arch/gooooo/releases/latest/download/stampcam.apk
+- 업데이트: 앱 실행 시 새 릴리스를 확인해 안내합니다. 화면(웹) 변경은 자동 반영, 앱 껍데기 변경은 새 APK 설치.

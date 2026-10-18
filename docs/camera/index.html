@@ -299,7 +299,7 @@ async function shoot(){
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",+S.q));
   const rec={id:d.getTime(),blob,time:d.getTime(),lat:loc?loc.lat:null,lon:loc?loc.lon:null,addr};
   await dbPut(rec);setThumb(rec);
-  toast("저장됨 ✓");
+  toast(await saveToPhone(rec)?"저장됨 ✓ 갤러리(Pictures/StampCam)":"저장됨 ✓");
   busy=false;
   if(S.share)sharePhoto(rec);
 }
@@ -338,7 +338,13 @@ async function openGallery(){
 function openViewer(rec,u){cur=rec;$("vimg").src=u;$("viewer").hidden=false}
 $("thumb").onclick=openGallery;
 const fname=r=>{const d=new Date(r.time);return `stamp_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`};
+// inside the Android APK shell: write straight into the phone's gallery
+function saveToPhone(rec){
+  if(!window.Android||!Android.saveImage)return Promise.resolve(false);
+  return new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(Android.saveImage(fr.result.split(",")[1],fname(rec)));fr.onerror=()=>res(false);fr.readAsDataURL(rec.blob)});
+}
 async function sharePhoto(rec){
+  if(window.Android&&Android.saveImage){toast(await saveToPhone(rec)?"갤러리에 저장했습니다":"저장 실패");return}
   const file=new File([rec.blob],fname(rec),{type:"image/jpeg"});
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return}catch(e){if(e.name==="AbortError")return}}
   downloadPhoto(rec);
@@ -351,7 +357,7 @@ $("vDel").onclick=async()=>{if(!confirm("이 사진을 삭제할까요?"))return
 // ---------- install ----------
 let deferred=null;
 const standalone=matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone;
-if(!standalone)$("bInstall").hidden=false;
+if(!standalone&&!window.Android)$("bInstall").hidden=false;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
 window.addEventListener("appinstalled",()=>{$("bInstall").hidden=true;toast("설치 완료! 홈 화면에서 실행하세요")});
 $("bInstall").onclick=async()=>{
