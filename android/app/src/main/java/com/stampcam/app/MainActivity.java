@@ -16,6 +16,8 @@ import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -30,7 +32,10 @@ import java.net.URL;
 
 /** Thin shell around the hosted StampCam web app: grants camera/GPS, saves photos to the gallery, checks for APK updates. */
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://inteligenceofficer-arch.github.io/gooooo/camera/";
+    // The web app is bundled in the APK (assets/camera) and served from this virtual https origin,
+    // which keeps it a secure context (needed for camera/GPS) without depending on GitHub Pages.
+    private static final String HOST = "appassets.androidplatform.net";
+    private static final String APP_URL = "https://" + HOST + "/camera/index.html";
     private static final String RELEASE_API = "https://api.github.com/repos/inteligenceofficer-arch/gooooo/releases/latest";
     private WebView web;
 
@@ -57,7 +62,24 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         web.addJavascriptInterface(new Bridge(), "Android");
-        web.setWebViewClient(new WebViewClient());
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+                Uri u = req.getUrl();
+                if (!HOST.equals(u.getHost())) return null;
+                String path = u.getPath();
+                if (path == null || path.endsWith("/")) path = (path == null ? "/camera/" : path) + "index.html";
+                try {
+                    InputStream in = getAssets().open(path.substring(1));
+                    String mime = path.endsWith(".html") ? "text/html" : path.endsWith(".png") ? "image/png"
+                            : path.endsWith(".js") ? "text/javascript" : path.endsWith(".webmanifest") ? "application/manifest+json"
+                            : "application/octet-stream";
+                    return new WebResourceResponse(mime, "UTF-8", in);
+                } catch (Exception e) {
+                    return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", null, null);
+                }
+            }
+        });
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onPermissionRequest(final PermissionRequest r) {

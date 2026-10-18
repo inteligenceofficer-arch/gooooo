@@ -374,7 +374,7 @@ $("bInstall").onclick=async()=>{
   showTimer();showGrid();renderWM();
   try{const all=(await dbAll()).sort((a,b)=>b.time-a.time);if(all[0])setThumb(all[0])}catch(e){}
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-  if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+  if("serviceWorker"in navigator&&!window.Android)navigator.serviceWorker.register("sw.js").catch(()=>{});
   startGeo();
   startCam();
 })();

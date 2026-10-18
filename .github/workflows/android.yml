@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [main, toeic-practice-workbook]
-    paths: ['android/**', '.github/workflows/android.yml']
+    paths: ['android/**', 'docs/camera/**', '.github/workflows/android.yml']
   workflow_dispatch:
 
 permissions:
@@ -18,6 +18,10 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v3
         with: { gradle-version: '8.7' }
+      - name: Bundle the web app into the APK
+        run: |
+          mkdir -p android/app/src/main/assets/camera
+          cp -r docs/camera/. android/app/src/main/assets/camera/
       - name: Build signed release APK
         working-directory: android
         run: gradle --no-daemon assembleRelease -PversionCode=${{ github.run_number }}
