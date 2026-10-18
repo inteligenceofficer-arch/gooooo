@@ -68,6 +68,7 @@ video.mirror{transform:scaleX(-1)}
     <button class="pill" id="bTorch" hidden>🔦</button>
     <button class="pill" id="bTimer">⏱ 끔</button>
     <button class="pill" id="bGrid">▦</button>
+    <button class="pill" id="bInstall" hidden>⬇ 앱 설치</button>
     <button class="pill" id="bSet">⚙ 설정</button>
   </div>
   <div id="stage">
@@ -104,6 +105,11 @@ video.mirror{transform:scaleX(-1)}
     <label class="row"><span>촬영 후 바로 공유/저장 창 열기<small>iPhone은 '이미지 저장'으로 사진앱에 저장</small></span><input type="checkbox" id="oShare"></label>
     <p style="color:var(--dim);font-size:13px;line-height:1.6">홈 화면에 추가하면 앱처럼 전체화면으로 실행됩니다. 사진은 이 앱 갤러리에 보관되며, 공유/저장 버튼으로 휴대폰 사진앱에 내보낼 수 있습니다.</p>
   </div>
+</div>
+
+<div class="sheet" id="howto" hidden>
+  <header>홈 화면에 설치 <button class="pill" data-close>닫기</button></header>
+  <div class="body" style="line-height:1.8;font-size:16px" id="howtoBody"></div>
 </div>
 
 <div class="sheet" id="gallery" hidden>
@@ -341,6 +347,21 @@ function downloadPhoto(rec){const a=document.createElement("a");a.href=URL.creat
 $("vShare").onclick=()=>sharePhoto(cur);
 $("vDown").onclick=()=>downloadPhoto(cur);
 $("vDel").onclick=async()=>{if(!confirm("이 사진을 삭제할까요?"))return;await dbDel(cur.id);$("viewer").hidden=true;await openGallery();const all=(await dbAll()).sort((a,b)=>b.time-a.time);setThumb(all[0])};
+
+// ---------- install ----------
+let deferred=null;
+const standalone=matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone;
+if(!standalone)$("bInstall").hidden=false;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
+window.addEventListener("appinstalled",()=>{$("bInstall").hidden=true;toast("설치 완료! 홈 화면에서 실행하세요")});
+$("bInstall").onclick=async()=>{
+  if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;return}
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  $("howtoBody").innerHTML=ios
+   ?"<b>iPhone (Safari)</b><ol><li>하단 <b>공유 버튼(□↑)</b> 누르기</li><li><b>홈 화면에 추가</b> 선택</li><li><b>추가</b> 누르기</li></ol><p style='color:var(--dim);font-size:14px'>Safari에서 열어야 합니다 (카카오톡 등 앱 내 브라우저에서는 불가).</p>"
+   :"<b>Android (Chrome)</b><ol><li>우측 상단 <b>⋮ 메뉴</b> 누르기</li><li><b>앱 설치</b> 또는 <b>홈 화면에 추가</b> 선택</li><li><b>설치</b> 누르기</li></ol><p style='color:var(--dim);font-size:14px'>Chrome/삼성 인터넷에서 열어야 합니다.</p>";
+  $("howto").hidden=false;
+};
 
 // ---------- boot ----------
 (async()=>{
